@@ -1,106 +1,115 @@
-# Django + PostgreSQL/Supabase • CRUD API + 3rd‑party API + Charts
+### Django + PostgreSQL/Supabase • CRUD API + 3rd‑party API + Charts
 
-A minimal, interview‑friendly Django app you can run locally in minutes and deploy to Render/anywhere with a Postgres (or Supabase) database.
+This project is a lightweight Django web application that demonstrates how to build a clean and simple full-stack setup with Django REST Framework, PostgreSQL (or Supabase), and a touch of data visualization using Chart.js. It’s designed to be easy to run locally in just a few minutes, and it can also be deployed smoothly to platforms like Render. The app focuses on three things: a basic CRUD API for managing tasks, an integration with a third-party weather API, and a small dashboard that visualizes task data.
 
-## Features
-- **CRUD REST API** for `Task` (Django REST Framework)
-- **3rd‑party API integration**: weather from Open‑Meteo (`/api/weather?city=Pune`) and a POST echo (`/api/echo`)
-- **Simple reporting & data viz**: `/api/report` feeds **Chart.js** on the homepage
-- **PostgreSQL/Supabase ready** via `DATABASE_URL`, falls back to SQLite for quick local spins
-
+Features
+**CRUD REST APIs** for a `Task` model (Django REST Framework)
+- **Third-party API integration** (Open-Meteo geocoding + forecast) and a POST echo
+- **Reporting + data visualization** (Chart.js) driven from real DB aggregates
+- **Deployable** on Render with PostgreSQL/Supabase
 ---
 
-## Quickstart (Windows + VS Code)
+### Live Demo / Repo
 
-1) **Clone & venv**
+- **Live URL:** http://127.0.0.1:8000/
+---
+
+### What’s inside
+
+- Home page with a minimal UI (no build tools)  
+  → create tasks, mark them done, delete them, view a weather call, and see two charts update.
+- REST endpoints under `/api/*` used by the page and testable via cURL/Postman.
+- Reporting endpoint (`/api/report/`) that powers the charts:
+  - **Tasks by status** (todo/doing/done)
+  - **Tasks per day** (created_at grouped by day)
+---
+
+### Tech Stack
+
+- **Python 3.12**, **Django 5**, **Django REST Framework**
+- **PostgreSQL** (works great with **Supabase**); local dev falls back to **SQLite**
+- **Chart.js** for client-side charts
+- **WhiteNoise** for static files in production
+- **Render** ready (Procfile + `render.yaml`)
+---
+
+### Quickstart (Windows / VS Code)
+
 ```powershell
-git clone REPO_URL django-supabase-demo
+# 1) Clone
+git clone https://github.com/<you>/django-supabase-demo.git
 cd django-supabase-demo
 
-# Python 3.12 recommended
+# 2) Virtual env
 py -3.12 -m venv .venv
 .\.venv\Scripts\Activate
 
+# 3) Install
 python -m pip install --upgrade pip
 pip install -r requirements.txt
-```
 
-2) **Run migrations & start**
-```powershell
-# Copy env
+# 4) Local dev env (uses SQLite if DATABASE_URL is empty)
 copy .env.example .env
-# (keep DEBUG=1 for local dev; SQLite is used automatically if DATABASE_URL is unset)
 
+# 5) Migrate & run
 python manage.py migrate
 python manage.py runserver
-```
+
 Open http://127.0.0.1:8000
-
-3) **Try it**
-- Create a task in the UI (home page) or via API:
-  - `POST /api/tasks/` with JSON `{ "title": "demo" }`
-- Charts auto‑update via `/api/report`
-- Weather: `GET /api/weather?city=Pune`
-- Echo: `POST /api/echo` with any JSON
-
+If PowerShell blocks activation, run once per session:
+Set-ExecutionPolicy -Scope Process Bypass; .\.venv\Scripts\Activate
+```
 ---
 
-## Switch to PostgreSQL (Supabase or any Postgres)
+### Switch to PostgreSQL (Supabase)
 
-**Supabase** (free):
-- Create a project → Settings → **Database** → copy **Connection string** (URI).
-- Set it in `.env` as `DATABASE_URL=postgresql://...sslmode=require`
-- Apply migrations:
+1. Create a Supabase project → Settings → Database → set/reset the DB password.
+2. Copy connection details for the Session Pooler (IPv4-friendly).
+3. URL-encode your password if it has special characters:
+ 
+python -c "import urllib.parse; print(urllib.parse.quote_plus('RawP@ss?word'))"
+
+
+4. Edit .env and set:
 ```powershell
+SECRET_KEY=<any-long-random-string>
+DATABASE_URL=postgresql://<USERNAME>:<ENCODED_PASSWORD>@<POOL_HOST>:5432/postgres?sslmode=require
+DEBUG=1
+ALLOWED_HOSTS=localhost,127.0.0.1
+```
+
+5. Apply migrations on Supabase:
 python manage.py migrate
-```
-- (Optional) create a superuser: `python manage.py createsuperuser` then open `/admin`.
-
 ---
 
-## Deploy on Render (fast)
+### Deploy (Render)
 
-1. Push to GitHub (public or private).
-2. On Render: **New → Web Service → Build from repo**.
-3. Runtime **Python**. Render reads `render.yaml`/`Procfile`.
-4. Add env vars:
-   - `DATABASE_URL` (from Supabase or Render Postgres add‑on)
-   - `SECRET_KEY` (any strong string)
-   - `DEBUG=0`
-   - `ALLOWED_HOSTS=*`
-5. Deploy. Visit the URL, load `/` and test endpoints under `/api/`.
+- Connect repo → New Web Service (Python).
+- Env vars: DATABASE_URL, SECRET_KEY, DEBUG=0, ALLOWED_HOSTS=*.
+- Included:
+    render.yaml → builds and collects static.
+    Procfile → runs gunicorn.
 
+After deploy:
+
+/ UI
+/api/tasks/, /api/report/, /api/weather?city=Pune
 ---
 
-## Project Structure
-```
-core/               # settings, urls
-tasks/              # app with model, serializers, views, routes
-templates/index.html# simple UI + Chart.js
-static/             # static assets (optional)
-```
+### Troubleshooting
 
----
+Venv won’t activate (PowerShell):
+Set-ExecutionPolicy -Scope Process Bypass; .\.venv\Scripts\Activate
 
-## API Reference (short)
-- `GET/POST /api/tasks/`
-- `GET/PATCH/DELETE /api/tasks/<id>/`
-- `GET /api/report/` → `{ by_status: [...], by_day: [...] }`
-- `GET /api/weather?city=Pune`
-- `POST /api/echo` → forwards your JSON to Postman Echo
+“password authentication failed”:
+Use Session Pooler, correct username, and URL-encoded password; end with ?sslmode=require.
 
----
+Static warning:
+mkdir static (harmless locally).
 
-## Tests (manual quick checks)
-- Create 3 tasks with different statuses; confirm both charts update.
-- Hit `/api/weather?city=Pune` → see coords + hourly temps.
-- `DELETE` a task; charts change accordingly.
+### What the charts show
 
----
+Tasks by Status: counts of todo/doing/done.
 
-## Notes
-- Uses `WhiteNoise` for static files in production.
-- Time zone set to `Asia/Kolkata`.
-- CORS open for demo simplicity; restrict in real apps.
-```
-
+Tasks per Day: number of tasks created each day.
+Source: /api/report/.

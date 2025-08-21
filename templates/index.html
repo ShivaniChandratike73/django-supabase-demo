@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Django Tasks • API + Charts</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/modern-css-reset@1.4.0/dist/reset.min.css">
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Arial, sans-serif; margin: 24px; }
+    header { display:flex; align-items:center; gap:12px; }
+    .pill { font-size:12px; padding:4px 8px; border-radius:999px; background:#eee; }
+    .grid { display:grid; grid-template-columns: 1fr 1fr; gap: 24px; margin-top: 24px; }
+    card { display:block; padding:16px; border:1px solid #e5e7eb; border-radius:12px; box-shadow: 0 1px 2px rgba(0,0,0,0.06); }
+    h2 { margin:0 0 12px; font-size:18px; }
+    label, input, select, textarea { font-size: 14px; }
+    input, select, textarea { width:100%; padding:8px; border:1px solid #ddd; border-radius:8px; }
+    button { padding:8px 12px; border-radius:8px; border:1px solid #111; background:#111; color:#fff; cursor:pointer; }
+    table { width:100%; border-collapse: collapse; }
+    th, td { text-align:left; padding:8px; border-bottom:1px solid #eee; font-size:14px; }
+    .row { display:flex; gap:8px; align-items:center; }
+  </style>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+</head>
+<body>
+  <header>
+    <h1>Django Tasks</h1>
+    <span class="pill">CRUD API</span>
+    <span class="pill">3rd-party API</span>
+    <span class="pill">Charts</span>
+  </header>
+
+  <div class="grid">
+    <card>
+      <h2>Create Task</h2>
+      <div class="row">
+        <input id="title" placeholder="Title" />
+        <select id="status">
+          <option value="todo">To Do</option>
+          <option value="doing">Doing</option>
+          <option value="done">Done</option>
+        </select>
+      </div>
+      <textarea id="description" placeholder="Description" rows="3" style="margin-top:8px;"></textarea>
+      <div class="row" style="margin-top:8px;">
+        <button onclick="createTask()">Add</button>
+        <input id="city" placeholder="Weather city (e.g., Pune)" />
+        <button onclick="getWeather()">Weather</button>
+      </div>
+      <pre id="weather" style="margin-top:8px; background:#f9fafb; padding:8px; border-radius:8px; max-height:200px; overflow:auto;"></pre>
+    </card>
+
+    <card>
+      <h2>Tasks</h2>
+      <table id="tasksTable">
+        <thead><tr><th>Title</th><th>Status</th><th>Actions</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </card>
+
+    <card>
+      <h2>Tasks by Status</h2>
+      <canvas id="statusChart"></canvas>
+    </card>
+
+    <card>
+      <h2>Tasks per Day</h2>
+      <canvas id="dayChart"></canvas>
+    </card>
+  </div>
+
+<script>
+const api = (path) => `/api/${path}`;
+
+async function createTask(){
+  const title = document.getElementById('title').value.trim();
+  const status = document.getElementById('status').value;
+  const description = document.getElementById('description').value.trim();
+  if(!title){ alert('Title required'); return; }
+  await fetch(api('tasks/'), {method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({title, status, description})});
+  document.getElementById('title').value=''; document.getElementById('description').value='';
+  loadTasks(); loadCharts();
+}
+
+async function loadTasks(){
+  const res = await fetch(api('tasks/')); const data = await res.json();
+  const tbody = document.querySelector('#tasksTable tbody'); tbody.innerHTML = '';
+  data.forEach(t => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${t.title}</td><td>${t.status}</td>
+      <td>
+        <button onclick="updateTask(${t.id}, 'done')">Mark Done</button>
+        <button onclick="deleteTask(${t.id})" style="background:#eee;color:#111;border-color:#ddd;">Delete</button>
+      </td>`;
+    tbody.appendChild(tr);
+  });
+}
+
+async function updateTask(id, status){
+  await fetch(api(`tasks/${id}/`), {method:'PATCH', headers:{'Content-Type':'application/json'}, body: JSON.stringify({status})});
+  loadTasks(); loadCharts();
+}
+
+async function deleteTask(id){
+  await fetch(api(`tasks/${id}/`), {method:'DELETE'});
+  loadTasks(); loadCharts();
+}
+
+let statusChart, dayChart;
+async function loadCharts(){
+  const res = await fetch(api('report/')); const r = await res.json();
+  const byStatus = r.by_status || []; const byDay = r.by_day || [];
+  const sLabels = byStatus.map(x => x.status); const sData = byStatus.map(x => x.count);
+  const dLabels = byDay.map(x => x.day); const dData = byDay.map(x => x.count);
+
+  // Status chart
+  if(statusChart) statusChart.destroy();
+  statusChart = new Chart(document.getElementById('statusChart'), {
+    type: 'bar',
+    data: { labels: sLabels, datasets: [{ label: 'Tasks', data: sData }]},
+    options: { responsive:true, scales:{ y:{ beginAtZero:true }}}
+  });
+  // Day chart
+  if(dayChart) dayChart.destroy();
+  dayChart = new Chart(document.getElementById('dayChart'), {
+    type: 'line',
+    data: { labels: dLabels, datasets: [{ label: 'Tasks', data: dData, tension: 0.3 }]},
+    options: { responsive:true, scales:{ y:{ beginAtZero:true }}}
+  });
+}
+
+async function getWeather(){
+  const city = document.getElementById('city').value || 'Pune';
+  const res = await fetch(api(`weather/?city=${encodeURIComponent(city)}`));
+  const data = await res.json();
+  document.getElementById('weather').textContent = JSON.stringify(data, null, 2);
+}
+
+loadTasks(); loadCharts();
+</script>
+
+</body>
+</html>

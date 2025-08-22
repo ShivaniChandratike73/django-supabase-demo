@@ -72,8 +72,8 @@ python -c "import urllib.parse; print(urllib.parse.quote_plus('RawP@ss?word'))"
 
 4. Edit .env and set:
 ```powershell
-SECRET_KEY=<any-long-random-string>
-DATABASE_URL=postgresql://<USERNAME>:<ENCODED_PASSWORD>@<POOL_HOST>:5432/postgres?sslmode=require
+SECRET_KEY=zd-ik1cL8V6dId6fURXVNn6hNHEqvMKVWY0DvoNlWI93_Sl3YYnA7jkzlGKQ6VIrb_E
+DATABASE_URL=postgresql://postgres.obqwatszmqegphdjvaem:sH!V@N!9cH@NDR@T!KE@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
 DEBUG=1
 ALLOWED_HOSTS=localhost,127.0.0.1
 ```

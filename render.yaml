@@ -6,9 +6,9 @@ services:
     buildCommand: pip install -r requirements.txt && python manage.py collectstatic --noinput
     startCommand: python manage.py migrate && gunicorn core.wsgi
     envVars:
-      - key: DATABASE_URL
+      - key: DATABASE_URL=postgresql://postgres.obqwatszmqegphdjvaem:sH!V@N!9cH@NDR@T!KE@aws-1-ap-south-1.pooler.supabase.com:5432/postgres?sslmode=require
         sync: false        
-      - key: SECRET_KEY
+      - key: SECRET_KEY=zd-ik1cL8V6dId6fURXVNn6hNHEqvMKVWY0DvoNlWI93_Sl3YYnA7jkzlGKQ6VIrb_E
         generateValue: true
       - key: DEBUG
         value: "0"

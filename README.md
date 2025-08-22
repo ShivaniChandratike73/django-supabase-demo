@@ -11,7 +11,7 @@ Features
 
 ### Live Demo / Repo
 
-- **Live URL:** http://127.0.0.1:8000/
+- **Live URL:** https://django-supabase-demo.onrender.com
 ---
 
 ### What’s inside
